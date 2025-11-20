@@ -1,0 +1,1044 @@
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"lcd.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/lcd.c"
+  20              		.section	.text.lcd_write,"ax",%progbits
+  21              		.align	1
+  22              		.syntax unified
+  23              		.thumb
+  24              		.thumb_func
+  26              	lcd_write:
+  27              	.LVL0:
+  28              	.LFB146:
+   1:Core/Src/lcd.c **** /*
+   2:Core/Src/lcd.c ****  * lcd.c
+   3:Core/Src/lcd.c ****  *
+   4:Core/Src/lcd.c ****  *  Created on: 10/06/2018
+   5:Core/Src/lcd.c ****  *      Author: Olivier Van den Eede
+   6:Core/Src/lcd.c ****  */
+   7:Core/Src/lcd.c **** 
+   8:Core/Src/lcd.c **** #include "lcd.h"
+   9:Core/Src/lcd.c **** const uint8_t ROW_16[] = {0x00, 0x40, 0x10, 0x50};
+  10:Core/Src/lcd.c **** const uint8_t ROW_20[] = {0x00, 0x40, 0x14, 0x54};
+  11:Core/Src/lcd.c **** /************************************** Static declarations **************************************/
+  12:Core/Src/lcd.c **** 
+  13:Core/Src/lcd.c **** static void lcd_write_data(Lcd_HandleTypeDef * lcd, uint8_t data);
+  14:Core/Src/lcd.c **** static void lcd_write_command(Lcd_HandleTypeDef * lcd, uint8_t command);
+  15:Core/Src/lcd.c **** static void lcd_write(Lcd_HandleTypeDef * lcd, uint8_t data, uint8_t len);
+  16:Core/Src/lcd.c **** 
+  17:Core/Src/lcd.c **** 
+  18:Core/Src/lcd.c **** /************************************** Function definitions **************************************
+  19:Core/Src/lcd.c **** 
+  20:Core/Src/lcd.c **** /**
+  21:Core/Src/lcd.c ****  * Create new Lcd_HandleTypeDef and initialize the Lcd
+  22:Core/Src/lcd.c ****  */
+  23:Core/Src/lcd.c **** Lcd_HandleTypeDef Lcd_create(
+  24:Core/Src/lcd.c **** 		Lcd_PortType port[], Lcd_PinType pin[],
+  25:Core/Src/lcd.c **** 		Lcd_PortType rs_port, Lcd_PinType rs_pin,
+  26:Core/Src/lcd.c **** 		Lcd_PortType en_port, Lcd_PinType en_pin, Lcd_ModeTypeDef mode)
+  27:Core/Src/lcd.c **** {
+  28:Core/Src/lcd.c **** 	Lcd_HandleTypeDef lcd;
+  29:Core/Src/lcd.c **** 
+  30:Core/Src/lcd.c **** 	lcd.mode = mode;
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 2
+
+
+  31:Core/Src/lcd.c **** 
+  32:Core/Src/lcd.c **** 	lcd.en_pin = en_pin;
+  33:Core/Src/lcd.c **** 	lcd.en_port = en_port;
+  34:Core/Src/lcd.c **** 
+  35:Core/Src/lcd.c **** 	lcd.rs_pin = rs_pin;
+  36:Core/Src/lcd.c **** 	lcd.rs_port = rs_port;
+  37:Core/Src/lcd.c **** 
+  38:Core/Src/lcd.c **** 	lcd.data_pin = pin;
+  39:Core/Src/lcd.c **** 	lcd.data_port = port;
+  40:Core/Src/lcd.c **** 
+  41:Core/Src/lcd.c **** 	Lcd_init(&lcd);
+  42:Core/Src/lcd.c **** 
+  43:Core/Src/lcd.c **** 	return lcd;
+  44:Core/Src/lcd.c **** }
+  45:Core/Src/lcd.c **** 
+  46:Core/Src/lcd.c **** /**
+  47:Core/Src/lcd.c ****  * Initialize 16x2-lcd without cursor
+  48:Core/Src/lcd.c ****  */
+  49:Core/Src/lcd.c **** void Lcd_init(Lcd_HandleTypeDef * lcd)
+  50:Core/Src/lcd.c **** {
+  51:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+  52:Core/Src/lcd.c **** 	{
+  53:Core/Src/lcd.c **** 			lcd_write_command(lcd, 0x33);
+  54:Core/Src/lcd.c **** 			lcd_write_command(lcd, 0x32);
+  55:Core/Src/lcd.c **** 			lcd_write_command(lcd, FUNCTION_SET | OPT_N);				// 4-bit mode
+  56:Core/Src/lcd.c **** 	}
+  57:Core/Src/lcd.c **** 	else
+  58:Core/Src/lcd.c **** 		lcd_write_command(lcd, FUNCTION_SET | OPT_DL | OPT_N);
+  59:Core/Src/lcd.c **** 
+  60:Core/Src/lcd.c **** 
+  61:Core/Src/lcd.c **** 	lcd_write_command(lcd, CLEAR_DISPLAY);						// Clear screen
+  62:Core/Src/lcd.c **** 	lcd_write_command(lcd, DISPLAY_ON_OFF_CONTROL | OPT_D);		// Lcd-on, cursor-off, no-blink
+  63:Core/Src/lcd.c **** 	lcd_write_command(lcd, ENTRY_MODE_SET | OPT_INC);			// Increment cursor
+  64:Core/Src/lcd.c **** }
+  65:Core/Src/lcd.c **** 
+  66:Core/Src/lcd.c **** /**
+  67:Core/Src/lcd.c ****  * Write a number on the current position
+  68:Core/Src/lcd.c ****  */
+  69:Core/Src/lcd.c **** void Lcd_int(Lcd_HandleTypeDef * lcd, int number)
+  70:Core/Src/lcd.c **** {
+  71:Core/Src/lcd.c **** 	char buffer[11];
+  72:Core/Src/lcd.c **** 	sprintf(buffer, "%d", number);
+  73:Core/Src/lcd.c **** 
+  74:Core/Src/lcd.c **** 	Lcd_string(lcd, buffer);
+  75:Core/Src/lcd.c **** }
+  76:Core/Src/lcd.c **** 
+  77:Core/Src/lcd.c **** /**
+  78:Core/Src/lcd.c ****  * Write a string on the current position
+  79:Core/Src/lcd.c ****  */
+  80:Core/Src/lcd.c **** void Lcd_string(Lcd_HandleTypeDef * lcd, char * string)
+  81:Core/Src/lcd.c **** {
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+  83:Core/Src/lcd.c **** 	{
+  84:Core/Src/lcd.c **** 		lcd_write_data(lcd, string[i]);
+  85:Core/Src/lcd.c **** 	}
+  86:Core/Src/lcd.c **** }
+  87:Core/Src/lcd.c **** 
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 3
+
+
+  88:Core/Src/lcd.c **** /**
+  89:Core/Src/lcd.c ****  * Set the cursor position
+  90:Core/Src/lcd.c ****  */
+  91:Core/Src/lcd.c **** void Lcd_cursor(Lcd_HandleTypeDef * lcd, uint8_t row, uint8_t col)
+  92:Core/Src/lcd.c **** {
+  93:Core/Src/lcd.c **** 	#ifdef LCD20xN
+  94:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_20[row] + col);
+  95:Core/Src/lcd.c **** 	#endif
+  96:Core/Src/lcd.c **** 
+  97:Core/Src/lcd.c **** 	#ifdef LCD16xN
+  98:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_16[row] + col);
+  99:Core/Src/lcd.c **** 	#endif
+ 100:Core/Src/lcd.c **** }
+ 101:Core/Src/lcd.c **** 
+ 102:Core/Src/lcd.c **** /**
+ 103:Core/Src/lcd.c ****  * Clear the screen
+ 104:Core/Src/lcd.c ****  */
+ 105:Core/Src/lcd.c **** void Lcd_clear(Lcd_HandleTypeDef * lcd) {
+ 106:Core/Src/lcd.c **** 	lcd_write_command(lcd, CLEAR_DISPLAY);
+ 107:Core/Src/lcd.c **** }
+ 108:Core/Src/lcd.c **** 
+ 109:Core/Src/lcd.c **** void Lcd_define_char(Lcd_HandleTypeDef * lcd, uint8_t code, uint8_t bitmap[]){
+ 110:Core/Src/lcd.c **** 	lcd_write_command(lcd, SETCGRAM_ADDR + (code << 3));
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 112:Core/Src/lcd.c **** 		lcd_write_data(lcd, bitmap[i]);
+ 113:Core/Src/lcd.c **** 	}
+ 114:Core/Src/lcd.c **** 
+ 115:Core/Src/lcd.c **** }
+ 116:Core/Src/lcd.c **** 
+ 117:Core/Src/lcd.c **** 
+ 118:Core/Src/lcd.c **** /************************************** Static function definition ********************************
+ 119:Core/Src/lcd.c **** 
+ 120:Core/Src/lcd.c **** /**
+ 121:Core/Src/lcd.c ****  * Write a byte to the command register
+ 122:Core/Src/lcd.c ****  */
+ 123:Core/Src/lcd.c **** void lcd_write_command(Lcd_HandleTypeDef * lcd, uint8_t command)
+ 124:Core/Src/lcd.c **** {
+ 125:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_COMMAND_REG);		// Write to command register
+ 126:Core/Src/lcd.c **** 
+ 127:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 128:Core/Src/lcd.c **** 	{
+ 129:Core/Src/lcd.c **** 		lcd_write(lcd, (command >> 4), LCD_NIB);
+ 130:Core/Src/lcd.c **** 		lcd_write(lcd, command & 0x0F, LCD_NIB);
+ 131:Core/Src/lcd.c **** 	}
+ 132:Core/Src/lcd.c **** 	else
+ 133:Core/Src/lcd.c **** 	{
+ 134:Core/Src/lcd.c **** 		lcd_write(lcd, command, LCD_BYTE);
+ 135:Core/Src/lcd.c **** 	}
+ 136:Core/Src/lcd.c **** 
+ 137:Core/Src/lcd.c **** }
+ 138:Core/Src/lcd.c **** 
+ 139:Core/Src/lcd.c **** /**
+ 140:Core/Src/lcd.c ****  * Write a byte to the data register
+ 141:Core/Src/lcd.c ****  */
+ 142:Core/Src/lcd.c **** void lcd_write_data(Lcd_HandleTypeDef * lcd, uint8_t data)
+ 143:Core/Src/lcd.c **** {
+ 144:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 4
+
+
+ 145:Core/Src/lcd.c **** 
+ 146:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 147:Core/Src/lcd.c **** 	{
+ 148:Core/Src/lcd.c **** 		lcd_write(lcd, data >> 4, LCD_NIB);
+ 149:Core/Src/lcd.c **** 		lcd_write(lcd, data & 0x0F, LCD_NIB);
+ 150:Core/Src/lcd.c **** 	}
+ 151:Core/Src/lcd.c **** 	else
+ 152:Core/Src/lcd.c **** 	{
+ 153:Core/Src/lcd.c **** 		lcd_write(lcd, data, LCD_BYTE);
+ 154:Core/Src/lcd.c **** 	}
+ 155:Core/Src/lcd.c **** 
+ 156:Core/Src/lcd.c **** }
+ 157:Core/Src/lcd.c **** 
+ 158:Core/Src/lcd.c **** /**
+ 159:Core/Src/lcd.c ****  * Set len bits on the bus and toggle the enable line
+ 160:Core/Src/lcd.c ****  */
+ 161:Core/Src/lcd.c **** void lcd_write(Lcd_HandleTypeDef * lcd, uint8_t data, uint8_t len)
+ 162:Core/Src/lcd.c **** {
+  29              		.loc 1 162 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		.loc 1 162 1 is_stmt 0 view .LVU1
+  34 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+  35              	.LCFI0:
+  36              		.cfi_def_cfa_offset 24
+  37              		.cfi_offset 3, -24
+  38              		.cfi_offset 4, -20
+  39              		.cfi_offset 5, -16
+  40              		.cfi_offset 6, -12
+  41              		.cfi_offset 7, -8
+  42              		.cfi_offset 14, -4
+  43 0002 0546     		mov	r5, r0
+  44 0004 0F46     		mov	r7, r1
+  45 0006 1646     		mov	r6, r2
+ 163:Core/Src/lcd.c **** 	// 1. 将4位数据并行发送到PC6-PC9
+ 164:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < len; i++)
+  46              		.loc 1 164 2 is_stmt 1 view .LVU2
+  47              	.LBB2:
+  48              		.loc 1 164 6 view .LVU3
+  49              	.LVL1:
+  50              		.loc 1 164 14 is_stmt 0 view .LVU4
+  51 0008 0024     		movs	r4, #0
+  52              		.loc 1 164 2 view .LVU5
+  53 000a 0DE0     		b	.L2
+  54              	.LVL2:
+  55              	.L3:
+ 165:Core/Src/lcd.c **** 	{
+ 166:Core/Src/lcd.c **** 		HAL_GPIO_WritePin(lcd->data_port[i], lcd->data_pin[i],
+  56              		.loc 1 166 3 is_stmt 1 view .LVU6
+  57              		.loc 1 166 24 is_stmt 0 view .LVU7
+  58 000c 2B68     		ldr	r3, [r5]
+  59              		.loc 1 166 43 view .LVU8
+  60 000e 6868     		ldr	r0, [r5, #4]
+ 167:Core/Src/lcd.c **** 			((data >> i) & 0x01) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  61              		.loc 1 167 11 view .LVU9
+  62 0010 47FA04F2 		asr	r2, r7, r4
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 5
+
+
+ 166:Core/Src/lcd.c **** 			((data >> i) & 0x01) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  63              		.loc 1 166 3 view .LVU10
+  64 0014 02F00102 		and	r2, r2, #1
+  65 0018 30F81410 		ldrh	r1, [r0, r4, lsl #1]
+  66 001c 53F82400 		ldr	r0, [r3, r4, lsl #2]
+  67 0020 FFF7FEFF 		bl	HAL_GPIO_WritePin
+  68              	.LVL3:
+ 164:Core/Src/lcd.c **** 	{
+  69              		.loc 1 164 31 is_stmt 1 discriminator 3 view .LVU11
+  70 0024 0134     		adds	r4, r4, #1
+  71              	.LVL4:
+ 164:Core/Src/lcd.c **** 	{
+  72              		.loc 1 164 31 is_stmt 0 discriminator 3 view .LVU12
+  73 0026 E4B2     		uxtb	r4, r4
+  74              	.LVL5:
+  75              	.L2:
+ 164:Core/Src/lcd.c **** 	{
+  76              		.loc 1 164 23 is_stmt 1 discriminator 1 view .LVU13
+  77 0028 B442     		cmp	r4, r6
+  78 002a EFD3     		bcc	.L3
+  79              	.LBE2:
+ 168:Core/Src/lcd.c **** 	}
+ 169:Core/Src/lcd.c **** 
+ 170:Core/Src/lcd.c **** 	// 2. 产生一个精确的使能（EN）脉冲来锁存数据
+ 171:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->en_port, lcd->en_pin, GPIO_PIN_SET);
+  80              		.loc 1 171 2 view .LVU14
+  81 002c 0122     		movs	r2, #1
+  82 002e A98A     		ldrh	r1, [r5, #20]
+  83 0030 2869     		ldr	r0, [r5, #16]
+  84 0032 FFF7FEFF 		bl	HAL_GPIO_WritePin
+  85              	.LVL6:
+ 172:Core/Src/lcd.c **** 
+ 173:Core/Src/lcd.c **** 	// 产生一个短暂的延时（约几微秒）作为EN脉冲宽度。
+ 174:Core/Src/lcd.c **** 	// 对于大多数MCU，几个NOP指令就足够了。
+ 175:Core/Src/lcd.c **** 	__NOP();
+  86              		.loc 1 175 2 view .LVU15
+  87              		.syntax unified
+  88              	@ 175 "Core/Src/lcd.c" 1
+  89 0036 00BF     		nop
+  90              	@ 0 "" 2
+ 176:Core/Src/lcd.c **** 	__NOP();
+  91              		.loc 1 176 2 view .LVU16
+  92              	@ 176 "Core/Src/lcd.c" 1
+  93 0038 00BF     		nop
+  94              	@ 0 "" 2
+ 177:Core/Src/lcd.c **** 	__NOP();
+  95              		.loc 1 177 2 view .LVU17
+  96              	@ 177 "Core/Src/lcd.c" 1
+  97 003a 00BF     		nop
+  98              	@ 0 "" 2
+ 178:Core/Src/lcd.c **** 	__NOP();
+  99              		.loc 1 178 2 view .LVU18
+ 100              	@ 178 "Core/Src/lcd.c" 1
+ 101 003c 00BF     		nop
+ 102              	@ 0 "" 2
+ 179:Core/Src/lcd.c **** 
+ 180:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->en_port, lcd->en_pin, GPIO_PIN_RESET);
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 6
+
+
+ 103              		.loc 1 180 2 view .LVU19
+ 104              		.thumb
+ 105              		.syntax unified
+ 106 003e 0022     		movs	r2, #0
+ 107 0040 A98A     		ldrh	r1, [r5, #20]
+ 108 0042 2869     		ldr	r0, [r5, #16]
+ 109 0044 FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 110              	.LVL7:
+ 181:Core/Src/lcd.c **** 
+ 182:Core/Src/lcd.c **** 	// 根据LCD数据手册，命令执行需要时间（几十微秒到几毫秒不等）
+ 183:Core/Src/lcd.c **** 	// 对于大多数命令，1ms的延时是安全的。
+ 184:Core/Src/lcd.c **** 	HAL_Delay(1);
+ 111              		.loc 1 184 2 view .LVU20
+ 112 0048 0120     		movs	r0, #1
+ 113 004a FFF7FEFF 		bl	HAL_Delay
+ 114              	.LVL8:
+ 185:Core/Src/lcd.c **** }...
+ 115              		.loc 1 185 1 is_stmt 0 view .LVU21
+ 116 004e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 117              		.loc 1 185 1 view .LVU22
+ 118              		.cfi_endproc
+ 119              	.LFE146:
+ 121              		.section	.text.lcd_write_command,"ax",%progbits
+ 122              		.align	1
+ 123              		.syntax unified
+ 124              		.thumb
+ 125              		.thumb_func
+ 127              	lcd_write_command:
+ 128              	.LVL9:
+ 129              	.LFB144:
+ 124:Core/Src/lcd.c **** {
+ 130              		.loc 1 124 1 is_stmt 1 view -0
+ 131              		.cfi_startproc
+ 132              		@ args = 0, pretend = 0, frame = 0
+ 133              		@ frame_needed = 0, uses_anonymous_args = 0
+ 124:Core/Src/lcd.c **** {
+ 134              		.loc 1 124 1 is_stmt 0 view .LVU24
+ 135 0000 38B5     		push	{r3, r4, r5, lr}
+ 136              	.LCFI1:
+ 137              		.cfi_def_cfa_offset 16
+ 138              		.cfi_offset 3, -16
+ 139              		.cfi_offset 4, -12
+ 140              		.cfi_offset 5, -8
+ 141              		.cfi_offset 14, -4
+ 142 0002 0446     		mov	r4, r0
+ 143 0004 0D46     		mov	r5, r1
+ 125:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_COMMAND_REG);		// Write to command register
+ 144              		.loc 1 125 2 is_stmt 1 view .LVU25
+ 145 0006 0022     		movs	r2, #0
+ 146 0008 8189     		ldrh	r1, [r0, #12]
+ 147              	.LVL10:
+ 125:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_COMMAND_REG);		// Write to command register
+ 148              		.loc 1 125 2 is_stmt 0 view .LVU26
+ 149 000a 8068     		ldr	r0, [r0, #8]
+ 150              	.LVL11:
+ 125:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_COMMAND_REG);		// Write to command register
+ 151              		.loc 1 125 2 view .LVU27
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 7
+
+
+ 152 000c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 153              	.LVL12:
+ 127:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 154              		.loc 1 127 2 is_stmt 1 view .LVU28
+ 127:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 155              		.loc 1 127 8 is_stmt 0 view .LVU29
+ 156 0010 A37D     		ldrb	r3, [r4, #22]	@ zero_extendqisi2
+ 127:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 157              		.loc 1 127 4 view .LVU30
+ 158 0012 63B9     		cbnz	r3, .L6
+ 129:Core/Src/lcd.c **** 		lcd_write(lcd, (command >> 4), LCD_NIB);
+ 159              		.loc 1 129 3 is_stmt 1 view .LVU31
+ 160 0014 0422     		movs	r2, #4
+ 161 0016 25FA02F1 		lsr	r1, r5, r2
+ 162 001a 2046     		mov	r0, r4
+ 163 001c FFF7FEFF 		bl	lcd_write
+ 164              	.LVL13:
+ 130:Core/Src/lcd.c **** 		lcd_write(lcd, command & 0x0F, LCD_NIB);
+ 165              		.loc 1 130 3 view .LVU32
+ 166 0020 0422     		movs	r2, #4
+ 167 0022 05F00F01 		and	r1, r5, #15
+ 168 0026 2046     		mov	r0, r4
+ 169 0028 FFF7FEFF 		bl	lcd_write
+ 170              	.LVL14:
+ 171              	.L5:
+ 137:Core/Src/lcd.c **** }
+ 172              		.loc 1 137 1 is_stmt 0 view .LVU33
+ 173 002c 38BD     		pop	{r3, r4, r5, pc}
+ 174              	.LVL15:
+ 175              	.L6:
+ 134:Core/Src/lcd.c **** 		lcd_write(lcd, command, LCD_BYTE);
+ 176              		.loc 1 134 3 is_stmt 1 view .LVU34
+ 177 002e 0822     		movs	r2, #8
+ 178 0030 2946     		mov	r1, r5
+ 179 0032 2046     		mov	r0, r4
+ 180 0034 FFF7FEFF 		bl	lcd_write
+ 181              	.LVL16:
+ 137:Core/Src/lcd.c **** }
+ 182              		.loc 1 137 1 is_stmt 0 view .LVU35
+ 183 0038 F8E7     		b	.L5
+ 184              		.cfi_endproc
+ 185              	.LFE144:
+ 187              		.section	.text.lcd_write_data,"ax",%progbits
+ 188              		.align	1
+ 189              		.syntax unified
+ 190              		.thumb
+ 191              		.thumb_func
+ 193              	lcd_write_data:
+ 194              	.LVL17:
+ 195              	.LFB145:
+ 143:Core/Src/lcd.c **** {
+ 196              		.loc 1 143 1 is_stmt 1 view -0
+ 197              		.cfi_startproc
+ 198              		@ args = 0, pretend = 0, frame = 0
+ 199              		@ frame_needed = 0, uses_anonymous_args = 0
+ 143:Core/Src/lcd.c **** {
+ 200              		.loc 1 143 1 is_stmt 0 view .LVU37
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 8
+
+
+ 201 0000 38B5     		push	{r3, r4, r5, lr}
+ 202              	.LCFI2:
+ 203              		.cfi_def_cfa_offset 16
+ 204              		.cfi_offset 3, -16
+ 205              		.cfi_offset 4, -12
+ 206              		.cfi_offset 5, -8
+ 207              		.cfi_offset 14, -4
+ 208 0002 0446     		mov	r4, r0
+ 209 0004 0D46     		mov	r5, r1
+ 144:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
+ 210              		.loc 1 144 2 is_stmt 1 view .LVU38
+ 211 0006 0122     		movs	r2, #1
+ 212 0008 8189     		ldrh	r1, [r0, #12]
+ 213              	.LVL18:
+ 144:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
+ 214              		.loc 1 144 2 is_stmt 0 view .LVU39
+ 215 000a 8068     		ldr	r0, [r0, #8]
+ 216              	.LVL19:
+ 144:Core/Src/lcd.c **** 	HAL_GPIO_WritePin(lcd->rs_port, lcd->rs_pin, LCD_DATA_REG);			// Write to data register
+ 217              		.loc 1 144 2 view .LVU40
+ 218 000c FFF7FEFF 		bl	HAL_GPIO_WritePin
+ 219              	.LVL20:
+ 146:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 220              		.loc 1 146 2 is_stmt 1 view .LVU41
+ 146:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 221              		.loc 1 146 8 is_stmt 0 view .LVU42
+ 222 0010 A37D     		ldrb	r3, [r4, #22]	@ zero_extendqisi2
+ 146:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 223              		.loc 1 146 4 view .LVU43
+ 224 0012 63B9     		cbnz	r3, .L10
+ 148:Core/Src/lcd.c **** 		lcd_write(lcd, data >> 4, LCD_NIB);
+ 225              		.loc 1 148 3 is_stmt 1 view .LVU44
+ 226 0014 0422     		movs	r2, #4
+ 227 0016 25FA02F1 		lsr	r1, r5, r2
+ 228 001a 2046     		mov	r0, r4
+ 229 001c FFF7FEFF 		bl	lcd_write
+ 230              	.LVL21:
+ 149:Core/Src/lcd.c **** 		lcd_write(lcd, data & 0x0F, LCD_NIB);
+ 231              		.loc 1 149 3 view .LVU45
+ 232 0020 0422     		movs	r2, #4
+ 233 0022 05F00F01 		and	r1, r5, #15
+ 234 0026 2046     		mov	r0, r4
+ 235 0028 FFF7FEFF 		bl	lcd_write
+ 236              	.LVL22:
+ 237              	.L9:
+ 156:Core/Src/lcd.c **** }
+ 238              		.loc 1 156 1 is_stmt 0 view .LVU46
+ 239 002c 38BD     		pop	{r3, r4, r5, pc}
+ 240              	.LVL23:
+ 241              	.L10:
+ 153:Core/Src/lcd.c **** 		lcd_write(lcd, data, LCD_BYTE);
+ 242              		.loc 1 153 3 is_stmt 1 view .LVU47
+ 243 002e 0822     		movs	r2, #8
+ 244 0030 2946     		mov	r1, r5
+ 245 0032 2046     		mov	r0, r4
+ 246 0034 FFF7FEFF 		bl	lcd_write
+ 247              	.LVL24:
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 9
+
+
+ 156:Core/Src/lcd.c **** }
+ 248              		.loc 1 156 1 is_stmt 0 view .LVU48
+ 249 0038 F8E7     		b	.L9
+ 250              		.cfi_endproc
+ 251              	.LFE145:
+ 253              		.section	.text.Lcd_init,"ax",%progbits
+ 254              		.align	1
+ 255              		.global	Lcd_init
+ 256              		.syntax unified
+ 257              		.thumb
+ 258              		.thumb_func
+ 260              	Lcd_init:
+ 261              	.LVL25:
+ 262              	.LFB138:
+  50:Core/Src/lcd.c **** {
+ 263              		.loc 1 50 1 is_stmt 1 view -0
+ 264              		.cfi_startproc
+ 265              		@ args = 0, pretend = 0, frame = 0
+ 266              		@ frame_needed = 0, uses_anonymous_args = 0
+  50:Core/Src/lcd.c **** {
+ 267              		.loc 1 50 1 is_stmt 0 view .LVU50
+ 268 0000 10B5     		push	{r4, lr}
+ 269              	.LCFI3:
+ 270              		.cfi_def_cfa_offset 8
+ 271              		.cfi_offset 4, -8
+ 272              		.cfi_offset 14, -4
+ 273 0002 0446     		mov	r4, r0
+  51:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 274              		.loc 1 51 2 is_stmt 1 view .LVU51
+  51:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 275              		.loc 1 51 8 is_stmt 0 view .LVU52
+ 276 0004 837D     		ldrb	r3, [r0, #22]	@ zero_extendqisi2
+  51:Core/Src/lcd.c **** 	if(lcd->mode == LCD_4_BIT_MODE)
+ 277              		.loc 1 51 4 view .LVU53
+ 278 0006 BBB9     		cbnz	r3, .L14
+  53:Core/Src/lcd.c **** 			lcd_write_command(lcd, 0x33);
+ 279              		.loc 1 53 4 is_stmt 1 view .LVU54
+ 280 0008 3321     		movs	r1, #51
+ 281 000a FFF7FEFF 		bl	lcd_write_command
+ 282              	.LVL26:
+  54:Core/Src/lcd.c **** 			lcd_write_command(lcd, 0x32);
+ 283              		.loc 1 54 4 view .LVU55
+ 284 000e 3221     		movs	r1, #50
+ 285 0010 2046     		mov	r0, r4
+ 286 0012 FFF7FEFF 		bl	lcd_write_command
+ 287              	.LVL27:
+  55:Core/Src/lcd.c **** 			lcd_write_command(lcd, FUNCTION_SET | OPT_N);				// 4-bit mode
+ 288              		.loc 1 55 4 view .LVU56
+ 289 0016 2821     		movs	r1, #40
+ 290 0018 2046     		mov	r0, r4
+ 291 001a FFF7FEFF 		bl	lcd_write_command
+ 292              	.LVL28:
+ 293              	.L15:
+  61:Core/Src/lcd.c **** 	lcd_write_command(lcd, CLEAR_DISPLAY);						// Clear screen
+ 294              		.loc 1 61 2 view .LVU57
+ 295 001e 0121     		movs	r1, #1
+ 296 0020 2046     		mov	r0, r4
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 10
+
+
+ 297 0022 FFF7FEFF 		bl	lcd_write_command
+ 298              	.LVL29:
+  62:Core/Src/lcd.c **** 	lcd_write_command(lcd, DISPLAY_ON_OFF_CONTROL | OPT_D);		// Lcd-on, cursor-off, no-blink
+ 299              		.loc 1 62 2 view .LVU58
+ 300 0026 0C21     		movs	r1, #12
+ 301 0028 2046     		mov	r0, r4
+ 302 002a FFF7FEFF 		bl	lcd_write_command
+ 303              	.LVL30:
+  63:Core/Src/lcd.c **** 	lcd_write_command(lcd, ENTRY_MODE_SET | OPT_INC);			// Increment cursor
+ 304              		.loc 1 63 2 view .LVU59
+ 305 002e 0621     		movs	r1, #6
+ 306 0030 2046     		mov	r0, r4
+ 307 0032 FFF7FEFF 		bl	lcd_write_command
+ 308              	.LVL31:
+  64:Core/Src/lcd.c **** }
+ 309              		.loc 1 64 1 is_stmt 0 view .LVU60
+ 310 0036 10BD     		pop	{r4, pc}
+ 311              	.LVL32:
+ 312              	.L14:
+  58:Core/Src/lcd.c **** 		lcd_write_command(lcd, FUNCTION_SET | OPT_DL | OPT_N);
+ 313              		.loc 1 58 3 is_stmt 1 view .LVU61
+ 314 0038 3821     		movs	r1, #56
+ 315 003a FFF7FEFF 		bl	lcd_write_command
+ 316              	.LVL33:
+  58:Core/Src/lcd.c **** 		lcd_write_command(lcd, FUNCTION_SET | OPT_DL | OPT_N);
+ 317              		.loc 1 58 3 is_stmt 0 view .LVU62
+ 318 003e EEE7     		b	.L15
+ 319              		.cfi_endproc
+ 320              	.LFE138:
+ 322              		.section	.text.Lcd_create,"ax",%progbits
+ 323              		.align	1
+ 324              		.global	Lcd_create
+ 325              		.syntax unified
+ 326              		.thumb
+ 327              		.thumb_func
+ 329              	Lcd_create:
+ 330              	.LVL34:
+ 331              	.LFB137:
+  27:Core/Src/lcd.c **** {
+ 332              		.loc 1 27 1 is_stmt 1 view -0
+ 333              		.cfi_startproc
+ 334              		@ args = 16, pretend = 0, frame = 24
+ 335              		@ frame_needed = 0, uses_anonymous_args = 0
+  27:Core/Src/lcd.c **** {
+ 336              		.loc 1 27 1 is_stmt 0 view .LVU64
+ 337 0000 10B5     		push	{r4, lr}
+ 338              	.LCFI4:
+ 339              		.cfi_def_cfa_offset 8
+ 340              		.cfi_offset 4, -8
+ 341              		.cfi_offset 14, -4
+ 342 0002 86B0     		sub	sp, sp, #24
+ 343              	.LCFI5:
+ 344              		.cfi_def_cfa_offset 32
+ 345 0004 0446     		mov	r4, r0
+  28:Core/Src/lcd.c **** 	Lcd_HandleTypeDef lcd;
+ 346              		.loc 1 28 2 is_stmt 1 view .LVU65
+  30:Core/Src/lcd.c **** 	lcd.mode = mode;
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 11
+
+
+ 347              		.loc 1 30 2 view .LVU66
+  30:Core/Src/lcd.c **** 	lcd.mode = mode;
+ 348              		.loc 1 30 11 is_stmt 0 view .LVU67
+ 349 0006 9DF82C00 		ldrb	r0, [sp, #44]	@ zero_extendqisi2
+ 350              	.LVL35:
+  30:Core/Src/lcd.c **** 	lcd.mode = mode;
+ 351              		.loc 1 30 11 view .LVU68
+ 352 000a 8DF81600 		strb	r0, [sp, #22]
+  32:Core/Src/lcd.c **** 	lcd.en_pin = en_pin;
+ 353              		.loc 1 32 2 is_stmt 1 view .LVU69
+  32:Core/Src/lcd.c **** 	lcd.en_pin = en_pin;
+ 354              		.loc 1 32 13 is_stmt 0 view .LVU70
+ 355 000e BDF82800 		ldrh	r0, [sp, #40]
+ 356 0012 ADF81400 		strh	r0, [sp, #20]	@ movhi
+  33:Core/Src/lcd.c **** 	lcd.en_port = en_port;
+ 357              		.loc 1 33 2 is_stmt 1 view .LVU71
+  33:Core/Src/lcd.c **** 	lcd.en_port = en_port;
+ 358              		.loc 1 33 14 is_stmt 0 view .LVU72
+ 359 0016 0998     		ldr	r0, [sp, #36]
+ 360 0018 0490     		str	r0, [sp, #16]
+  35:Core/Src/lcd.c **** 	lcd.rs_pin = rs_pin;
+ 361              		.loc 1 35 2 is_stmt 1 view .LVU73
+  35:Core/Src/lcd.c **** 	lcd.rs_pin = rs_pin;
+ 362              		.loc 1 35 13 is_stmt 0 view .LVU74
+ 363 001a BDF82000 		ldrh	r0, [sp, #32]
+ 364 001e ADF80C00 		strh	r0, [sp, #12]	@ movhi
+  36:Core/Src/lcd.c **** 	lcd.rs_port = rs_port;
+ 365              		.loc 1 36 2 is_stmt 1 view .LVU75
+  36:Core/Src/lcd.c **** 	lcd.rs_port = rs_port;
+ 366              		.loc 1 36 14 is_stmt 0 view .LVU76
+ 367 0022 0293     		str	r3, [sp, #8]
+  38:Core/Src/lcd.c **** 	lcd.data_pin = pin;
+ 368              		.loc 1 38 2 is_stmt 1 view .LVU77
+  38:Core/Src/lcd.c **** 	lcd.data_pin = pin;
+ 369              		.loc 1 38 15 is_stmt 0 view .LVU78
+ 370 0024 0192     		str	r2, [sp, #4]
+  39:Core/Src/lcd.c **** 	lcd.data_port = port;
+ 371              		.loc 1 39 2 is_stmt 1 view .LVU79
+  39:Core/Src/lcd.c **** 	lcd.data_port = port;
+ 372              		.loc 1 39 16 is_stmt 0 view .LVU80
+ 373 0026 0091     		str	r1, [sp]
+  41:Core/Src/lcd.c **** 	Lcd_init(&lcd);
+ 374              		.loc 1 41 2 is_stmt 1 view .LVU81
+ 375 0028 6846     		mov	r0, sp
+ 376 002a FFF7FEFF 		bl	Lcd_init
+ 377              	.LVL36:
+  43:Core/Src/lcd.c **** 	return lcd;
+ 378              		.loc 1 43 2 view .LVU82
+  43:Core/Src/lcd.c **** 	return lcd;
+ 379              		.loc 1 43 9 is_stmt 0 view .LVU83
+ 380 002e A646     		mov	lr, r4
+ 381 0030 EC46     		mov	ip, sp
+ 382 0032 BCE80F00 		ldmia	ip!, {r0, r1, r2, r3}
+ 383 0036 AEE80F00 		stmia	lr!, {r0, r1, r2, r3}
+ 384 003a 9CE80300 		ldm	ip, {r0, r1}
+ 385 003e 8EE80300 		stm	lr, {r0, r1}
+  44:Core/Src/lcd.c **** }
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 12
+
+
+ 386              		.loc 1 44 1 view .LVU84
+ 387 0042 2046     		mov	r0, r4
+ 388 0044 06B0     		add	sp, sp, #24
+ 389              	.LCFI6:
+ 390              		.cfi_def_cfa_offset 8
+ 391              		@ sp needed
+ 392 0046 10BD     		pop	{r4, pc}
+  44:Core/Src/lcd.c **** }
+ 393              		.loc 1 44 1 view .LVU85
+ 394              		.cfi_endproc
+ 395              	.LFE137:
+ 397              		.section	.text.Lcd_string,"ax",%progbits
+ 398              		.align	1
+ 399              		.global	Lcd_string
+ 400              		.syntax unified
+ 401              		.thumb
+ 402              		.thumb_func
+ 404              	Lcd_string:
+ 405              	.LVL37:
+ 406              	.LFB140:
+  81:Core/Src/lcd.c **** {
+ 407              		.loc 1 81 1 is_stmt 1 view -0
+ 408              		.cfi_startproc
+ 409              		@ args = 0, pretend = 0, frame = 0
+ 410              		@ frame_needed = 0, uses_anonymous_args = 0
+  81:Core/Src/lcd.c **** {
+ 411              		.loc 1 81 1 is_stmt 0 view .LVU87
+ 412 0000 70B5     		push	{r4, r5, r6, lr}
+ 413              	.LCFI7:
+ 414              		.cfi_def_cfa_offset 16
+ 415              		.cfi_offset 4, -16
+ 416              		.cfi_offset 5, -12
+ 417              		.cfi_offset 6, -8
+ 418              		.cfi_offset 14, -4
+ 419 0002 0646     		mov	r6, r0
+ 420 0004 0D46     		mov	r5, r1
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 421              		.loc 1 82 2 is_stmt 1 view .LVU88
+ 422              	.LBB3:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 423              		.loc 1 82 6 view .LVU89
+ 424              	.LVL38:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 425              		.loc 1 82 14 is_stmt 0 view .LVU90
+ 426 0006 0024     		movs	r4, #0
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 427              		.loc 1 82 2 view .LVU91
+ 428 0008 05E0     		b	.L20
+ 429              	.LVL39:
+ 430              	.L21:
+  84:Core/Src/lcd.c **** 		lcd_write_data(lcd, string[i]);
+ 431              		.loc 1 84 3 is_stmt 1 view .LVU92
+ 432 000a 295D     		ldrb	r1, [r5, r4]	@ zero_extendqisi2
+ 433 000c 3046     		mov	r0, r6
+ 434 000e FFF7FEFF 		bl	lcd_write_data
+ 435              	.LVL40:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 13
+
+
+ 436              		.loc 1 82 42 discriminator 3 view .LVU93
+ 437 0012 0134     		adds	r4, r4, #1
+ 438              	.LVL41:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 439              		.loc 1 82 42 is_stmt 0 discriminator 3 view .LVU94
+ 440 0014 E4B2     		uxtb	r4, r4
+ 441              	.LVL42:
+ 442              	.L20:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 443              		.loc 1 82 23 is_stmt 1 discriminator 1 view .LVU95
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 444              		.loc 1 82 25 is_stmt 0 discriminator 1 view .LVU96
+ 445 0016 2846     		mov	r0, r5
+ 446 0018 FFF7FEFF 		bl	strlen
+ 447              	.LVL43:
+  82:Core/Src/lcd.c **** 	for(uint8_t i = 0; i < strlen(string); i++)
+ 448              		.loc 1 82 23 discriminator 1 view .LVU97
+ 449 001c 8442     		cmp	r4, r0
+ 450 001e F4D3     		bcc	.L21
+ 451              	.LBE3:
+  86:Core/Src/lcd.c **** }
+ 452              		.loc 1 86 1 view .LVU98
+ 453 0020 70BD     		pop	{r4, r5, r6, pc}
+  86:Core/Src/lcd.c **** }
+ 454              		.loc 1 86 1 view .LVU99
+ 455              		.cfi_endproc
+ 456              	.LFE140:
+ 458              		.section	.rodata.Lcd_int.str1.4,"aMS",%progbits,1
+ 459              		.align	2
+ 460              	.LC0:
+ 461 0000 256400   		.ascii	"%d\000"
+ 462              		.section	.text.Lcd_int,"ax",%progbits
+ 463              		.align	1
+ 464              		.global	Lcd_int
+ 465              		.syntax unified
+ 466              		.thumb
+ 467              		.thumb_func
+ 469              	Lcd_int:
+ 470              	.LVL44:
+ 471              	.LFB139:
+  70:Core/Src/lcd.c **** {
+ 472              		.loc 1 70 1 is_stmt 1 view -0
+ 473              		.cfi_startproc
+ 474              		@ args = 0, pretend = 0, frame = 16
+ 475              		@ frame_needed = 0, uses_anonymous_args = 0
+  70:Core/Src/lcd.c **** {
+ 476              		.loc 1 70 1 is_stmt 0 view .LVU101
+ 477 0000 10B5     		push	{r4, lr}
+ 478              	.LCFI8:
+ 479              		.cfi_def_cfa_offset 8
+ 480              		.cfi_offset 4, -8
+ 481              		.cfi_offset 14, -4
+ 482 0002 84B0     		sub	sp, sp, #16
+ 483              	.LCFI9:
+ 484              		.cfi_def_cfa_offset 24
+ 485 0004 0446     		mov	r4, r0
+ 486 0006 0A46     		mov	r2, r1
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 14
+
+
+  71:Core/Src/lcd.c **** 	char buffer[11];
+ 487              		.loc 1 71 2 is_stmt 1 view .LVU102
+  72:Core/Src/lcd.c **** 	sprintf(buffer, "%d", number);
+ 488              		.loc 1 72 2 view .LVU103
+ 489 0008 0449     		ldr	r1, .L25
+ 490              	.LVL45:
+  72:Core/Src/lcd.c **** 	sprintf(buffer, "%d", number);
+ 491              		.loc 1 72 2 is_stmt 0 view .LVU104
+ 492 000a 01A8     		add	r0, sp, #4
+ 493              	.LVL46:
+  72:Core/Src/lcd.c **** 	sprintf(buffer, "%d", number);
+ 494              		.loc 1 72 2 view .LVU105
+ 495 000c FFF7FEFF 		bl	sprintf
+ 496              	.LVL47:
+  74:Core/Src/lcd.c **** 	Lcd_string(lcd, buffer);
+ 497              		.loc 1 74 2 is_stmt 1 view .LVU106
+ 498 0010 01A9     		add	r1, sp, #4
+ 499 0012 2046     		mov	r0, r4
+ 500 0014 FFF7FEFF 		bl	Lcd_string
+ 501              	.LVL48:
+  75:Core/Src/lcd.c **** }
+ 502              		.loc 1 75 1 is_stmt 0 view .LVU107
+ 503 0018 04B0     		add	sp, sp, #16
+ 504              	.LCFI10:
+ 505              		.cfi_def_cfa_offset 8
+ 506              		@ sp needed
+ 507 001a 10BD     		pop	{r4, pc}
+ 508              	.LVL49:
+ 509              	.L26:
+  75:Core/Src/lcd.c **** }
+ 510              		.loc 1 75 1 view .LVU108
+ 511              		.align	2
+ 512              	.L25:
+ 513 001c 00000000 		.word	.LC0
+ 514              		.cfi_endproc
+ 515              	.LFE139:
+ 517              		.section	.text.Lcd_cursor,"ax",%progbits
+ 518              		.align	1
+ 519              		.global	Lcd_cursor
+ 520              		.syntax unified
+ 521              		.thumb
+ 522              		.thumb_func
+ 524              	Lcd_cursor:
+ 525              	.LVL50:
+ 526              	.LFB141:
+  92:Core/Src/lcd.c **** {
+ 527              		.loc 1 92 1 is_stmt 1 view -0
+ 528              		.cfi_startproc
+ 529              		@ args = 0, pretend = 0, frame = 0
+ 530              		@ frame_needed = 0, uses_anonymous_args = 0
+  92:Core/Src/lcd.c **** {
+ 531              		.loc 1 92 1 is_stmt 0 view .LVU110
+ 532 0000 08B5     		push	{r3, lr}
+ 533              	.LCFI11:
+ 534              		.cfi_def_cfa_offset 8
+ 535              		.cfi_offset 3, -8
+ 536              		.cfi_offset 14, -4
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 15
+
+
+  98:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_16[row] + col);
+ 537              		.loc 1 98 2 is_stmt 1 view .LVU111
+  98:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_16[row] + col);
+ 538              		.loc 1 98 48 is_stmt 0 view .LVU112
+ 539 0002 044B     		ldr	r3, .L29
+ 540 0004 595C     		ldrb	r1, [r3, r1]	@ zero_extendqisi2
+ 541              	.LVL51:
+  98:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_16[row] + col);
+ 542              		.loc 1 98 54 view .LVU113
+ 543 0006 1144     		add	r1, r1, r2
+ 544 0008 C9B2     		uxtb	r1, r1
+  98:Core/Src/lcd.c **** 	lcd_write_command(lcd, SET_DDRAM_ADDR + ROW_16[row] + col);
+ 545              		.loc 1 98 2 view .LVU114
+ 546 000a 81F08001 		eor	r1, r1, #128
+ 547 000e FFF7FEFF 		bl	lcd_write_command
+ 548              	.LVL52:
+ 100:Core/Src/lcd.c **** }
+ 549              		.loc 1 100 1 view .LVU115
+ 550 0012 08BD     		pop	{r3, pc}
+ 551              	.L30:
+ 552              		.align	2
+ 553              	.L29:
+ 554 0014 00000000 		.word	ROW_16
+ 555              		.cfi_endproc
+ 556              	.LFE141:
+ 558              		.section	.text.Lcd_clear,"ax",%progbits
+ 559              		.align	1
+ 560              		.global	Lcd_clear
+ 561              		.syntax unified
+ 562              		.thumb
+ 563              		.thumb_func
+ 565              	Lcd_clear:
+ 566              	.LVL53:
+ 567              	.LFB142:
+ 105:Core/Src/lcd.c **** void Lcd_clear(Lcd_HandleTypeDef * lcd) {
+ 568              		.loc 1 105 41 is_stmt 1 view -0
+ 569              		.cfi_startproc
+ 570              		@ args = 0, pretend = 0, frame = 0
+ 571              		@ frame_needed = 0, uses_anonymous_args = 0
+ 105:Core/Src/lcd.c **** void Lcd_clear(Lcd_HandleTypeDef * lcd) {
+ 572              		.loc 1 105 41 is_stmt 0 view .LVU117
+ 573 0000 08B5     		push	{r3, lr}
+ 574              	.LCFI12:
+ 575              		.cfi_def_cfa_offset 8
+ 576              		.cfi_offset 3, -8
+ 577              		.cfi_offset 14, -4
+ 106:Core/Src/lcd.c **** 	lcd_write_command(lcd, CLEAR_DISPLAY);
+ 578              		.loc 1 106 2 is_stmt 1 view .LVU118
+ 579 0002 0121     		movs	r1, #1
+ 580 0004 FFF7FEFF 		bl	lcd_write_command
+ 581              	.LVL54:
+ 107:Core/Src/lcd.c **** }
+ 582              		.loc 1 107 1 is_stmt 0 view .LVU119
+ 583 0008 08BD     		pop	{r3, pc}
+ 584              		.cfi_endproc
+ 585              	.LFE142:
+ 587              		.section	.text.Lcd_define_char,"ax",%progbits
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 16
+
+
+ 588              		.align	1
+ 589              		.global	Lcd_define_char
+ 590              		.syntax unified
+ 591              		.thumb
+ 592              		.thumb_func
+ 594              	Lcd_define_char:
+ 595              	.LVL55:
+ 596              	.LFB143:
+ 109:Core/Src/lcd.c **** void Lcd_define_char(Lcd_HandleTypeDef * lcd, uint8_t code, uint8_t bitmap[]){
+ 597              		.loc 1 109 78 is_stmt 1 view -0
+ 598              		.cfi_startproc
+ 599              		@ args = 0, pretend = 0, frame = 0
+ 600              		@ frame_needed = 0, uses_anonymous_args = 0
+ 109:Core/Src/lcd.c **** void Lcd_define_char(Lcd_HandleTypeDef * lcd, uint8_t code, uint8_t bitmap[]){
+ 601              		.loc 1 109 78 is_stmt 0 view .LVU121
+ 602 0000 70B5     		push	{r4, r5, r6, lr}
+ 603              	.LCFI13:
+ 604              		.cfi_def_cfa_offset 16
+ 605              		.cfi_offset 4, -16
+ 606              		.cfi_offset 5, -12
+ 607              		.cfi_offset 6, -8
+ 608              		.cfi_offset 14, -4
+ 609 0002 0646     		mov	r6, r0
+ 610 0004 1546     		mov	r5, r2
+ 110:Core/Src/lcd.c **** 	lcd_write_command(lcd, SETCGRAM_ADDR + (code << 3));
+ 611              		.loc 1 110 2 is_stmt 1 view .LVU122
+ 110:Core/Src/lcd.c **** 	lcd_write_command(lcd, SETCGRAM_ADDR + (code << 3));
+ 612              		.loc 1 110 47 is_stmt 0 view .LVU123
+ 613 0006 C900     		lsls	r1, r1, #3
+ 614              	.LVL56:
+ 110:Core/Src/lcd.c **** 	lcd_write_command(lcd, SETCGRAM_ADDR + (code << 3));
+ 615              		.loc 1 110 47 view .LVU124
+ 616 0008 C9B2     		uxtb	r1, r1
+ 110:Core/Src/lcd.c **** 	lcd_write_command(lcd, SETCGRAM_ADDR + (code << 3));
+ 617              		.loc 1 110 2 view .LVU125
+ 618 000a 4031     		adds	r1, r1, #64
+ 619 000c 01F0F801 		and	r1, r1, #248
+ 620 0010 FFF7FEFF 		bl	lcd_write_command
+ 621              	.LVL57:
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 622              		.loc 1 111 2 is_stmt 1 view .LVU126
+ 623              	.LBB4:
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 624              		.loc 1 111 6 view .LVU127
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 625              		.loc 1 111 14 is_stmt 0 view .LVU128
+ 626 0014 0024     		movs	r4, #0
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 627              		.loc 1 111 2 view .LVU129
+ 628 0016 05E0     		b	.L34
+ 629              	.LVL58:
+ 630              	.L35:
+ 112:Core/Src/lcd.c **** 		lcd_write_data(lcd, bitmap[i]);
+ 631              		.loc 1 112 3 is_stmt 1 view .LVU130
+ 632 0018 295D     		ldrb	r1, [r5, r4]	@ zero_extendqisi2
+ 633 001a 3046     		mov	r0, r6
+ 634 001c FFF7FEFF 		bl	lcd_write_data
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 17
+
+
+ 635              	.LVL59:
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 636              		.loc 1 111 22 discriminator 3 view .LVU131
+ 637 0020 0134     		adds	r4, r4, #1
+ 638              	.LVL60:
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 639              		.loc 1 111 22 is_stmt 0 discriminator 3 view .LVU132
+ 640 0022 E4B2     		uxtb	r4, r4
+ 641              	.LVL61:
+ 642              	.L34:
+ 111:Core/Src/lcd.c **** 	for(uint8_t i=0;i<8;++i){
+ 643              		.loc 1 111 19 is_stmt 1 discriminator 1 view .LVU133
+ 644 0024 072C     		cmp	r4, #7
+ 645 0026 F7D9     		bls	.L35
+ 646              	.LBE4:
+ 115:Core/Src/lcd.c **** }
+ 647              		.loc 1 115 1 is_stmt 0 view .LVU134
+ 648 0028 70BD     		pop	{r4, r5, r6, pc}
+ 115:Core/Src/lcd.c **** }
+ 649              		.loc 1 115 1 view .LVU135
+ 650              		.cfi_endproc
+ 651              	.LFE143:
+ 653              		.global	ROW_20
+ 654              		.section	.rodata.ROW_20,"a"
+ 655              		.align	2
+ 658              	ROW_20:
+ 659 0000 00401454 		.ascii	"\000@\024T"
+ 660              		.global	ROW_16
+ 661              		.section	.rodata.ROW_16,"a"
+ 662              		.align	2
+ 665              	ROW_16:
+ 666 0000 00401050 		.ascii	"\000@\020P"
+ 667              		.text
+ 668              	.Letext0:
+ 669              		.file 2 "D:\\SOFTWARE\\STM32CubeCLT_1.18.0\\GNU-tools-for-STM32\\bin/../lib/gcc/arm-none-eabi/13.3
+ 670              		.file 3 "D:\\SOFTWARE\\STM32CubeCLT_1.18.0\\GNU-tools-for-STM32\\bin/../lib/gcc/arm-none-eabi/13.3
+ 671              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f446xx.h"
+ 672              		.file 5 "D:\\SOFTWARE\\STM32CubeCLT_1.18.0\\GNU-tools-for-STM32\\bin/../lib/gcc/arm-none-eabi/13.3
+ 673              		.file 6 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h"
+ 674              		.file 7 "Core/Inc/lcd.h"
+ 675              		.file 8 "D:\\SOFTWARE\\STM32CubeCLT_1.18.0\\GNU-tools-for-STM32\\bin/../lib/gcc/arm-none-eabi/13.3
+ 676              		.file 9 "D:\\SOFTWARE\\STM32CubeCLT_1.18.0\\GNU-tools-for-STM32\\bin/../lib/gcc/arm-none-eabi/13.3
+ 677              		.file 10 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h"
+ARM GAS  C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s 			page 18
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 lcd.c
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:21     .text.lcd_write:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:26     .text.lcd_write:00000000 lcd_write
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:122    .text.lcd_write_command:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:127    .text.lcd_write_command:00000000 lcd_write_command
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:188    .text.lcd_write_data:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:193    .text.lcd_write_data:00000000 lcd_write_data
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:254    .text.Lcd_init:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:260    .text.Lcd_init:00000000 Lcd_init
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:323    .text.Lcd_create:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:329    .text.Lcd_create:00000000 Lcd_create
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:398    .text.Lcd_string:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:404    .text.Lcd_string:00000000 Lcd_string
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:459    .rodata.Lcd_int.str1.4:00000000 $d
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:463    .text.Lcd_int:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:469    .text.Lcd_int:00000000 Lcd_int
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:513    .text.Lcd_int:0000001c $d
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:518    .text.Lcd_cursor:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:524    .text.Lcd_cursor:00000000 Lcd_cursor
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:554    .text.Lcd_cursor:00000014 $d
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:665    .rodata.ROW_16:00000000 ROW_16
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:559    .text.Lcd_clear:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:565    .text.Lcd_clear:00000000 Lcd_clear
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:588    .text.Lcd_define_char:00000000 $t
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:594    .text.Lcd_define_char:00000000 Lcd_define_char
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:658    .rodata.ROW_20:00000000 ROW_20
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:655    .rodata.ROW_20:00000000 $d
+C:\Users\zzy10\AppData\Local\Temp\ccbkcGMN.s:662    .rodata.ROW_16:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_GPIO_WritePin
+HAL_Delay
+strlen
+sprintf
