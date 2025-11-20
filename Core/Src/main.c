@@ -123,7 +123,7 @@ int main(void)
   {
     /* 每秒重写一次，观察是否稳定显示 */
     Lcd_cursor(&lcd, 0, 0);
-    Lcd_string(&lcd, "hello");
+    Lcd_string(&lcd, "hello Qi Li");
 
     /* 翻转板载 LED（PA5）以判断是否为外部干扰/中断同时发生 */
     HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);

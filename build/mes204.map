@@ -1591,66 +1591,65 @@ LOAD D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none
 .iplt           0x080018f4        0x0
  .iplt          0x080018f4        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 
-.rodata         0x080018f4       0x1c
+.rodata         0x080018f4       0x20
                 0x080018f4                        . = ALIGN (0x4)
  *(.rodata)
  *(.rodata*)
  .rodata.main.str1.4
-                0x080018f4        0x6 build/main.o
- *fill*         0x080018fa        0x2 
+                0x080018f4        0xc build/main.o
  .rodata.ROW_16
-                0x080018fc        0x4 build/lcd.o
-                0x080018fc                ROW_16
+                0x08001900        0x4 build/lcd.o
+                0x08001900                ROW_16
  .rodata.AHBPrescTable
-                0x08001900       0x10 build/system_stm32f4xx.o
-                0x08001900                AHBPrescTable
-                0x08001910                        . = ALIGN (0x4)
+                0x08001904       0x10 build/system_stm32f4xx.o
+                0x08001904                AHBPrescTable
+                0x08001914                        . = ALIGN (0x4)
 
-.ARM.extab      0x08001910        0x0
-                0x08001910                        . = ALIGN (0x4)
+.ARM.extab      0x08001914        0x0
+                0x08001914                        . = ALIGN (0x4)
  *(.ARM.extab* .gnu.linkonce.armextab.*)
-                0x08001910                        . = ALIGN (0x4)
+                0x08001914                        . = ALIGN (0x4)
 
-.ARM            0x08001910        0x8
-                0x08001910                        . = ALIGN (0x4)
-                0x08001910                        __exidx_start = .
+.ARM            0x08001914        0x8
+                0x08001914                        . = ALIGN (0x4)
+                0x08001914                        __exidx_start = .
  *(.ARM.exidx*)
- .ARM.exidx     0x08001910        0x8 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
- .ARM.exidx     0x08001918        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .ARM.exidx     0x08001914        0x8 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/lib/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .ARM.exidx     0x0800191c        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
                                   0x8 (size before relaxing)
-                0x08001918                        __exidx_end = .
-                0x08001918                        . = ALIGN (0x4)
+                0x0800191c                        __exidx_end = .
+                0x0800191c                        . = ALIGN (0x4)
 
-.preinit_array  0x08001918        0x0
-                0x08001918                        . = ALIGN (0x4)
-                0x08001918                        PROVIDE (__preinit_array_start = .)
+.preinit_array  0x0800191c        0x0
+                0x0800191c                        . = ALIGN (0x4)
+                0x0800191c                        PROVIDE (__preinit_array_start = .)
  *(.preinit_array*)
-                0x08001918                        PROVIDE (__preinit_array_end = .)
-                0x08001918                        . = ALIGN (0x4)
+                0x0800191c                        PROVIDE (__preinit_array_end = .)
+                0x0800191c                        . = ALIGN (0x4)
 
-.init_array     0x08001918        0x4
-                0x08001918                        . = ALIGN (0x4)
-                0x08001918                        PROVIDE (__init_array_start = .)
+.init_array     0x0800191c        0x4
+                0x0800191c                        . = ALIGN (0x4)
+                0x0800191c                        PROVIDE (__init_array_start = .)
  *(SORT_BY_NAME(.init_array.*))
  *(.init_array*)
- .init_array    0x08001918        0x4 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
-                0x0800191c                        PROVIDE (__init_array_end = .)
-                0x0800191c                        . = ALIGN (0x4)
+ .init_array    0x0800191c        0x4 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+                0x08001920                        PROVIDE (__init_array_end = .)
+                0x08001920                        . = ALIGN (0x4)
 
-.fini_array     0x0800191c        0x4
-                0x0800191c                        . = ALIGN (0x4)
+.fini_array     0x08001920        0x4
+                0x08001920                        . = ALIGN (0x4)
                 [!provide]                        PROVIDE (__fini_array_start = .)
  *(SORT_BY_NAME(.fini_array.*))
  *(.fini_array*)
- .fini_array    0x0800191c        0x4 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+ .fini_array    0x08001920        0x4 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
                 [!provide]                        PROVIDE (__fini_array_end = .)
-                0x08001920                        . = ALIGN (0x4)
-                0x08001920                        _sidata = LOADADDR (.data)
+                0x08001924                        . = ALIGN (0x4)
+                0x08001924                        _sidata = LOADADDR (.data)
 
-.rel.dyn        0x08001920        0x0
- .rel.iplt      0x08001920        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
+.rel.dyn        0x08001924        0x0
+ .rel.iplt      0x08001924        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
 
-.data           0x20000000       0x34 load address 0x08001920
+.data           0x20000000       0x34 load address 0x08001924
                 0x20000000                        . = ALIGN (0x4)
                 0x20000000                        _sdata = .
  *(.data)
@@ -1686,11 +1685,11 @@ LOAD D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none
                 0x20000034                        . = ALIGN (0x4)
                 0x20000034                        _edata = .
 
-.igot.plt       0x20000034        0x0 load address 0x08001954
+.igot.plt       0x20000034        0x0 load address 0x08001958
  .igot.plt      0x20000034        0x0 D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none-eabi/13.3.1/thumb/v7e-m+fp/hard/crtbegin.o
                 0x20000034                        . = ALIGN (0x4)
 
-.bss            0x20000034       0x80 load address 0x08001954
+.bss            0x20000034       0x80 load address 0x08001958
                 0x20000034                        _sbss = .
                 0x20000034                        __bss_start__ = _sbss
  *(.bss)
@@ -1708,7 +1707,7 @@ LOAD D:/SOFTWARE/STM32CubeCLT_1.18.0/GNU-tools-for-STM32/bin/../lib/gcc/arm-none
                 0x200000b4                        __bss_end__ = _ebss
 
 ._user_heap_stack
-                0x200000b4      0x604 load address 0x08001954
+                0x200000b4      0x604 load address 0x08001958
                 0x200000b8                        . = ALIGN (0x8)
  *fill*         0x200000b4        0x4 
                 [!provide]                        PROVIDE (end = .)
