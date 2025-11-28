@@ -55,8 +55,10 @@ Lcd_PinType  rs_pin  = GPIO_PIN_8;
 Lcd_PortType en_port = GPIOB;
 Lcd_PinType  en_pin  = GPIO_PIN_9;
 
-
 Lcd_HandleTypeDef lcd; /* 全局句柄 */
+
+volatile Lcd_State_t lcd_state = STATE_CLEAR;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,30 +112,50 @@ int main(void)
 
   /* 可选短延时，确保 LCD 上电稳定 */
   HAL_Delay(50);
-
   Lcd_clear(&lcd);
-  //Lcd_cursor(&lcd, 0, 0);
-  //Lcd_string(&lcd, "helloo");
+  Lcd_cursor(&lcd, 0, 0);
+  Lcd_string(&lcd, "PRESS ANY KEY" );
+  Lcd_cursor(&lcd, 1, 0); // 行1, 列0
+  Lcd_string(&lcd, "TO START TEST!");
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  Lcd_State_t last_state = lcd_state; // 跟踪上一个状态以检测变化
+
   while (1)
   {
-    /* 每秒重写一次，观察是否稳定显示 */
-    Lcd_cursor(&lcd, 0, 0);
-    Lcd_string(&lcd, "hello Qi Li");
+    // 1. 检查状态是否因中断而改变
+    if (lcd_state != last_state)
+    {
+      if (lcd_state == STATE_DISPLAY)
+      {
+        // 状态从 CLEAR 切换到 DISPLAY
+        Lcd_clear(&lcd);
+        Lcd_cursor(&lcd, 0, 0);
+        Lcd_string(&lcd, "Button Activated!");
+        Lcd_cursor(&lcd, 1, 0);
+        Lcd_string(&lcd, "Test OK!");
+      }
+      else // lcd_state == STATE_CLEAR
+      {
+        // 状态从 DISPLAY 切换到 CLEAR
+        Lcd_clear(&lcd);
+        Lcd_cursor(&lcd, 0, 0);
+        Lcd_string(&lcd, "Press Button!");
+      }
 
-    /* 翻转板载 LED（PA5）以判断是否为外部干扰/中断同时发生 */
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+      // 更新跟踪状态
+      last_state = lcd_state;
+    }
 
-    HAL_Delay(1000);
+    // 2. 闪烁板载 LED (PA5) 以证明主循环正在运行
+    HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
+    HAL_Delay(100); // 100ms 闪烁周期，保持主循环快速响应
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-
   }
   /* USER CODE END 3 */
 }
@@ -250,19 +272,19 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_LD2_GPIO_Port, LED_LD2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LCD_RS_Pin|LCD_EN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : BUTTON_Pin */
-  GPIO_InitStruct.Pin = BUTTON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BUTTON_GPIO_Port, &GPIO_InitStruct);
+  /*Configure GPIO pin : Button_Pin */
+  GPIO_InitStruct.Pin = Button_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA2 PA3 */
   GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
@@ -272,26 +294,30 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA5 PA13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_13;
+  /*Configure GPIO pin : LED_LD2_Pin */
+  GPIO_InitStruct.Pin = LED_LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(LED_LD2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC6 PC7 PC8 PC9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9;
+  /*Configure GPIO pins : LCD_D4_Pin LCD_D5_Pin LCD_D6_Pin LCD_D7_Pin */
+  GPIO_InitStruct.Pin = LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB8 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+  /*Configure GPIO pins : LCD_RS_Pin LCD_EN_Pin */
+  GPIO_InitStruct.Pin = LCD_RS_Pin|LCD_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

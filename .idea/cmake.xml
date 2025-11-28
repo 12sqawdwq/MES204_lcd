@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSharedSettings">
+    <configurations>
+      <configuration PROFILE_NAME="debugarm" ENABLED="false" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="ARM" GENERATION_OPTIONS="$CMakeProjectDir$$CMakeProjectParentDir$" />
+      <configuration PROFILE_NAME="Debug-MinGW (arm）" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="MinGW (arm）" />
+    </configurations>
+  </component>
+</project>

@@ -57,10 +57,31 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define BUTTON_Pin GPIO_PIN_13
-#define BUTTON_GPIO_Port GPIOC
+#define Button_Pin GPIO_PIN_13
+#define Button_GPIO_Port GPIOC
+#define Button_EXTI_IRQn EXTI15_10_IRQn
+#define LED_LD2_Pin GPIO_PIN_5
+#define LED_LD2_GPIO_Port GPIOA
+#define LCD_D4_Pin GPIO_PIN_6
+#define LCD_D4_GPIO_Port GPIOC
+#define LCD_D5_Pin GPIO_PIN_7
+#define LCD_D5_GPIO_Port GPIOC
+#define LCD_D6_Pin GPIO_PIN_8
+#define LCD_D6_GPIO_Port GPIOC
+#define LCD_D7_Pin GPIO_PIN_9
+#define LCD_D7_GPIO_Port GPIOC
+#define LCD_RS_Pin GPIO_PIN_8
+#define LCD_RS_GPIO_Port GPIOB
+#define LCD_EN_Pin GPIO_PIN_9
+#define LCD_EN_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+  typedef enum {
+    STATE_CLEAR,   // 清屏状态
+    STATE_DISPLAY  // 显示状态
+  } Lcd_State_t;
+
+  extern volatile Lcd_State_t lcd_state;
 
 /* USER CODE END Private defines */
 

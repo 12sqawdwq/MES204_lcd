@@ -198,6 +198,53 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
+/**
+  * @brief This function handles EXTI line[15:10] interrupts.
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(Button_Pin);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
+
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief  外部中断通用回调函数。
+  * @param  GPIO_Pin: 触发中断的 GPIO 引脚
+  * @retval None
+  */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  // *** 这是用户按钮中断处理逻辑 ***
+  if (GPIO_Pin == Button_Pin)
+  {
+    // 简单软件消抖：防止机械抖动在极短时间内多次触发中断
+    // 实际项目中应使用定时器或延时进行更可靠的消抖
+    static uint32_t last_tick = 0;
+    uint32_t current_tick = HAL_GetTick();
+
+    if (current_tick - last_tick > 200) // 200ms 的消抖时间
+    {
+      // 切换 LCD 状态
+      if (lcd_state == STATE_CLEAR)
+      {
+        lcd_state = STATE_DISPLAY;
+      }
+      else
+      {
+        lcd_state = STATE_CLEAR;
+      }
+
+      // 更新上次触发时间
+      last_tick = current_tick;
+    }
+  }
+}
 
 /* USER CODE END 1 */

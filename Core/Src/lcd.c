@@ -1,9 +1,3 @@
-/*
- * lcd.c
- *
- *  Created on: 10/06/2018
- *      Author: Olivier Van den Eede
- */
 
 #include "lcd.h"
 const uint8_t ROW_16[] = {0x00, 0x40, 0x10, 0x50};
