@@ -113,48 +113,98 @@ int main(void)
   /* 可选短延时，确保 LCD 上电稳定 */
   HAL_Delay(50);
   Lcd_clear(&lcd);
+  // Lcd_cursor(&lcd, 0, 0);
+  // Lcd_string(&lcd, "PRESS ANY KEY" );
+  // Lcd_cursor(&lcd, 1, 0); // 行1, 列0
+  // Lcd_string(&lcd, "TO START TEST!");
+
+  // *** 关键：加载自定义字符 ***
+  Lcd_load_custom_chars(&lcd);
+
+  // 初始提示（测试是否能显示自定义字符，例如显示恐龙的头）
   Lcd_cursor(&lcd, 0, 0);
-  Lcd_string(&lcd, "PRESS ANY KEY" );
-  Lcd_cursor(&lcd, 1, 0); // 行1, 列0
-  Lcd_string(&lcd, "TO START TEST!");
+  lcd_write_data(&lcd, 0x04); // 尝试显示 CGRAM 地址 0x04 的字符（恐龙站立）
+  Lcd_string(&lcd, " DINO TEST");
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   Lcd_State_t last_state = lcd_state; // 跟踪上一个状态以检测变化
+  uint8_t dino_frame = 0; // 0 表示帧 1 (0x06)，1 表示帧 2 (0x07)
+  int8_t dino_col = 0;       // 恐龙的当前列位置 (0 到 15)
+  int8_t dino_direction = 1; // 移动方向：1 (向右), -1 (向左)
 
   while (1)
   {
-    // 1. 检查状态是否因中断而改变
+    // 1. 中断状态处理：仅在状态切换时执行清屏操作
     if (lcd_state != last_state)
     {
       if (lcd_state == STATE_DISPLAY)
       {
-        // 状态从 CLEAR 切换到 DISPLAY
         Lcd_clear(&lcd);
         Lcd_cursor(&lcd, 0, 0);
         Lcd_string(&lcd, "Button Activated!");
-        Lcd_cursor(&lcd, 1, 0);
-        Lcd_string(&lcd, "Test OK!");
+        // 重新初始化恐龙位置
+        dino_col = 0;
+        dino_direction = 1;
       }
-      else // lcd_state == STATE_CLEAR
+      else // STATE_CLEAR
       {
-        // 状态从 DISPLAY 切换到 CLEAR
         Lcd_clear(&lcd);
         Lcd_cursor(&lcd, 0, 0);
         Lcd_string(&lcd, "Press Button!");
       }
 
-      // 更新跟踪状态
       last_state = lcd_state;
     }
 
-    // 2. 闪烁板载 LED (PA5) 以证明主循环正在运行
-    HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
-    HAL_Delay(100); // 100ms 闪烁周期，保持主循环快速响应
-    /* USER CODE END WHILE */
+    // --- 2. 动画与移动逻辑：仅在 STATE_DISPLAY 状态下运行 ---
+    if (lcd_state == STATE_DISPLAY)
+    {
+      // A. 清除上一帧的恐龙（在当前位置写入空格）
+      Lcd_cursor(&lcd, 1, dino_col); // 定位到上一帧位置
+      lcd_write_data(&lcd, ' ');           // 写入空格清除恐龙
 
+      // B. 更新恐龙位置
+      dino_col += dino_direction;
+
+      // C. 边界碰撞检测 (16x2 LCD，列范围 0 到 15)
+      if (dino_col >= 15)
+      {
+        dino_direction = -1; // 达到最右侧，改为向左移动
+        dino_col = 15;       // 确保停留在边界
+      }
+      else if (dino_col <= 0)
+      {
+        dino_direction = 1;  // 达到最左侧，改为向右移动
+        dino_col = 0;        // 确保停留在边界
+      }
+
+      // D. 绘制新一帧的恐龙
+      Lcd_cursor(&lcd, 1, dino_col); // 定位到新的位置
+
+      // 切换跑步帧：0x06 (跑腿帧 1) 或 0x07 (跑腿帧 2)
+      uint8_t current_dino_char = (dino_frame == 0) ? 0x06 : 0x07;
+      lcd_write_data(&lcd, current_dino_char);
+
+      // 切换到下一帧
+      dino_frame = 1 - dino_frame;
+
+      // E. 闪烁 LED（表示主循环在动）
+      HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
+
+      // F. 动画延时：控制帧率和移动速度
+      HAL_Delay(500);
+    }
+    else
+    {
+      // 如果不是 DISPLAY 状态，只做 LED 闪烁和短延时
+      HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
+      HAL_Delay(100);
+    }
+
+    /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

@@ -4,10 +4,59 @@ const uint8_t ROW_16[] = {0x00, 0x40, 0x10, 0x50};
 const uint8_t ROW_20[] = {0x00, 0x40, 0x14, 0x54};
 /************************************** Static declarations **************************************/
 
-static void lcd_write_data(Lcd_HandleTypeDef * lcd, uint8_t data);
-static void lcd_write_command(Lcd_HandleTypeDef * lcd, uint8_t command);
-static void lcd_write(Lcd_HandleTypeDef * lcd, uint8_t data, uint8_t len);
+void lcd_write_data(Lcd_HandleTypeDef * lcd, uint8_t data);
+void lcd_write_command(Lcd_HandleTypeDef * lcd, uint8_t command);
+void lcd_write(Lcd_HandleTypeDef * lcd, uint8_t data, uint8_t len);
 
+
+/******************************** 自定义字节组，用于定义小恐龙游戏中的字符数据 ******************************/
+// 恐龙游戏自定义字符数据 (5x8 像素)
+
+// CGRAM 地址 0x00: Grass/Empty
+const uint8_t char_empty[8] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+// CGRAM 地址 0x01: Grass Frame 1
+const uint8_t char_grass_f1[8] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10
+};
+
+// CGRAM 地址 0x02: Grass Frame 2
+const uint8_t char_grass_f2[8] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x18
+};
+
+// CGRAM 地址 0x03: Grass Frame 3 (Full)
+const uint8_t char_grass_f3[8] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x18, 0x1C
+};
+
+// CGRAM 地址 0x04: Dino Standing/Jump Mid
+const uint8_t char_dino_stand[8] = {
+	0x00, 0x04, 0x0A, 0x1F, 0x15, 0x1F, 0x0A, 0x0A
+};
+
+// CGRAM 地址 0x05: Dino Jumping Top
+const uint8_t char_dino_jump[8] = {
+	0x02, 0x06, 0x0E, 0x1F, 0x15, 0x1F, 0x00, 0x00
+};
+
+// CGRAM 地址 0x06: Dino Running Frame 1
+const uint8_t char_dino_run1[8] = {
+	0x00, 0x04, 0x0A, 0x1F, 0x15, 0x1F, 0x0A, 0x10
+};
+
+// CGRAM 地址 0x07: Dino Running Frame 2
+const uint8_t char_dino_run2[8] = {
+	0x00, 0x04, 0x0A, 0x1F, 0x15, 0x1F, 0x0A, 0x05
+};
+
+// 定义自定义字符数组的集合
+const uint8_t *custom_chars[] = {
+	char_empty, char_grass_f1, char_grass_f2, char_grass_f3,
+	char_dino_stand, char_dino_jump, char_dino_run1, char_dino_run2
+};
 
 /************************************** Function definitions **************************************/
 
@@ -108,6 +157,36 @@ void Lcd_define_char(Lcd_HandleTypeDef * lcd, uint8_t code, uint8_t bitmap[]){
 
 }
 
+/**
+  * @brief  将自定义字符数据写入 LCD1602 的 CGRAM。
+  * @param  lcd: LCD 句柄
+  * @retval None
+  */
+/**
+  * @brief  将自定义字符数据写入 LCD1602 的 CGRAM。
+  * @param  lcd: LCD 句柄
+  * @retval None
+  */
+void Lcd_load_custom_chars(Lcd_HandleTypeDef *lcd)
+{
+	uint8_t i, j;
+
+	// CGRAM 地址从 0x40 开始
+	// 修正：Lcd_command -> lcd_write_command
+	lcd_write_command(lcd, 0x40);
+
+	// 循环写入 8 个自定义字符 (i=0 到 i=7)
+	for (i = 0; i < 8; i++)
+	{
+		// 每个字符由 8 个字节组成 (j=0 到 j=7)
+		for (j = 0; j < 8; j++)
+		{
+			// 直接发送数据（RS=1）
+			// 修正：Lcd_data -> lcd_write_data
+			lcd_write_data(lcd, custom_chars[i][j]);
+		}
+	}
+}
 
 /************************************** Static function definition **************************************/
 
