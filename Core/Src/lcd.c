@@ -251,8 +251,6 @@ void lcd_write(Lcd_HandleTypeDef * lcd, uint8_t data, uint8_t len)
 	__NOP();
 
 	HAL_GPIO_WritePin(lcd->en_port, lcd->en_pin, GPIO_PIN_RESET);
-
-	// 根据LCD数据手册，命令执行需要时间（几十微秒到几毫秒不等）
-	// 对于大多数命令，1ms的延时是安全的。
-	HAL_Delay(1);
+	volatile uint32_t delay_count = 15000;
+	while(delay_count--);
 }

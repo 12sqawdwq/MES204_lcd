@@ -22,6 +22,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "lcd.h"
+#include "dinogame.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,13 +57,15 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern TIM_HandleTypeDef htim1;
 /* USER CODE BEGIN EV */
-
+extern Lcd_HandleTypeDef lcd;      // 外部声明 LCD 句柄
+extern volatile bool jump_order;   // 外部声明 jump_order
+// 确保 Game_Status_Init 函数原型在 dinogame.h 中被正确声明
 /* USER CODE END EV */
 
 /******************************************************************************/
-/*           Cortex-M4 Processor Interruption and Exception Handlers          */
+/* Cortex-M4 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
   * @brief This function handles Non maskable interrupt.
@@ -199,6 +203,20 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+  * @brief This function handles TIM1 update interrupt and TIM10 global interrupt.
+  */
+void TIM1_UP_TIM10_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
+
+  /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim1);
+  /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
+
+  /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+
+/**
   * @brief This function handles EXTI line[15:10] interrupts.
   */
 void EXTI15_10_IRQHandler(void)
@@ -214,34 +232,57 @@ void EXTI15_10_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 
-/**
-  * @brief  外部中断通用回调函数。
-  * @param  GPIO_Pin: 触发中断的 GPIO 引脚
-  * @retval None
-  */
+// ====================================================================
+// *** 定时器回调函数 ***
+// ====================================================================
+
+// 确保 Game_Core_Loop 函数原型在 dinogame.h 中可见
+// 确保 Lcd_HandleTypeDef lcd 句柄在 EV 区域 extern 声明
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM1)
+  {
+    Game_Core_Loop(&lcd);
+  }
+}
+
+// ====================================================================
+// *** GPIO 外部中断回调函数 ***
+// ====================================================================
+
+// 确保 game_start 变量在 dinogame.h 中 extern 声明
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  // *** 这是用户按钮中断处理逻辑 ***
+  // 避免在中断中执行复杂的 LCD I/O 操作，但由于是单任务环境，可以接受少量操作。
+
   if (GPIO_Pin == Button_Pin)
   {
-    // 简单软件消抖：防止机械抖动在极短时间内多次触发中断
-    // 实际项目中应使用定时器或延时进行更可靠的消抖
     static uint32_t last_tick = 0;
     uint32_t current_tick = HAL_GetTick();
 
-    if (current_tick - last_tick > 200) // 200ms 的消抖时间
+    if (current_tick - last_tick > 200) // 消抖 200ms
     {
-      // 切换 LCD 状态
-      if (lcd_state == STATE_CLEAR)
+      if (game_start == false)
       {
-        lcd_state = STATE_DISPLAY;
-      }
-      else
-      {
-        lcd_state = STATE_CLEAR;
+        // 按钮按下时启动游戏
+        game_start = true;
+        // Game_Status_Init() 在 dinogame.h 中 extern 声明
+        Game_Status_Init();
+
+        // 立即清除屏幕并显示得分区 (LCD 函数在 lcd.h 中声明)
+        Lcd_clear(&lcd);
+        Lcd_cursor(&lcd, 0, 5);
+        Lcd_string(&lcd, "Score:");
+        Lcd_cursor(&lcd, 0, COL - 3);
+        Lcd_string(&lcd, "  "); // 假设分数显示为3位宽度
+
+      } else {
+        // 游戏进行中，按钮用于跳跃
+        jump_order = true; // jump_order 在 EV 区域 extern 声明
       }
 
-      // 更新上次触发时间
       last_tick = current_tick;
     }
   }

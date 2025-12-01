@@ -11,7 +11,7 @@
 #include "stm32f4xx_hal.h"
 #include "string.h"
 #include "stdio.h"
-#include "main.h"
+//#include "main.h" //处理链接问题，注释掉
 
 // #define LCD20xN 		// For 20xN LCDs
 #define LCD16xN			// For 16xN LCDs

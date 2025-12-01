@@ -32,6 +32,8 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lcd.h"
+
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -83,6 +85,35 @@ void Error_Handler(void);
   } Lcd_State_t;
 
   extern volatile Lcd_State_t lcd_state;
+  extern Lcd_HandleTypeDef lcd; /* 全局句柄 */
+
+  // ======================================
+  // 1. 游戏参数 (来自 Python 脚本)
+  // ======================================
+#define COL 16             // LCD 列数
+#define JUMP_CYCLE 16      // 跳跃动画总帧数
+
+  // ======================================
+  // 2. CGRAM 地址宏 (与 lcd.c 中的 char_ 数组对应)
+  // ======================================
+#define CHAR_EMPTY       0x00 // CGRAM 0x00
+#define CHAR_GRASS_F1    0x01 // CGRAM 0x01
+#define CHAR_GRASS_F2    0x02 // CGRAM 0x02
+#define CHAR_GRASS_F3    0x03 // CGRAM 0x03
+
+#define CHAR_DINO_STAND  0x04 // CGRAM 0x04 (站立/跳跃中间)
+#define CHAR_DINO_JUMP   0x05 // CGRAM 0x05 (跳跃顶部)
+#define CHAR_DINO_RUN1   0x06 // CGRAM 0x06 (跑腿帧 1)
+#define CHAR_DINO_RUN2   0x07 // CGRAM 0x07 (跑腿帧 2)
+
+
+  // ======================================
+  // 4. 游戏逻辑函数声明
+  // ======================================
+  void Game_Status_Init(void);
+  void Game_Update_Grass(void);
+  void Game_Update_Jump(void);
+  void Game_Draw_Frame(Lcd_HandleTypeDef *lcd);
 
 /* USER CODE END Private defines */
 

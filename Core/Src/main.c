@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "lcd.h"
+#include "dinogame.h"
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
@@ -54,10 +56,12 @@ Lcd_PinType  rs_pin  = GPIO_PIN_8;
 
 Lcd_PortType en_port = GPIOB;
 Lcd_PinType  en_pin  = GPIO_PIN_9;
+Lcd_HandleTypeDef lcd; /* 全局句柄的定义（分配内存） */
 
-Lcd_HandleTypeDef lcd; /* 全局句柄 */
+// volatile Lcd_State_t lcd_state = STATE_CLEAR; // 此变量未在其他地方使用，可以删除或忽略
 
-volatile Lcd_State_t lcd_state = STATE_CLEAR;
+/* 增加状态跟踪变量以解决屏幕卡死问题 */
+bool last_game_start_state = false;
 
 /* USER CODE END PV */
 
@@ -71,6 +75,18 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+/**
+ * @brief 绘制初始的“待机”界面。
+ */
+void Draw_Initial_Screen(void)
+{
+    Lcd_clear(&lcd);
+    Lcd_cursor(&lcd, 0, 1);
+    Lcd_string(&lcd, "Dino STM32");
+    Lcd_cursor(&lcd, 1, 1);
+    Lcd_string(&lcd, "Press Button!");
+}
 
 /* USER CODE END 0 */
 
@@ -113,98 +129,51 @@ int main(void)
   /* 可选短延时，确保 LCD 上电稳定 */
   HAL_Delay(50);
   Lcd_clear(&lcd);
-  // Lcd_cursor(&lcd, 0, 0);
-  // Lcd_string(&lcd, "PRESS ANY KEY" );
-  // Lcd_cursor(&lcd, 1, 0); // 行1, 列0
-  // Lcd_string(&lcd, "TO START TEST!");
 
-  // *** 关键：加载自定义字符 ***
-  Lcd_load_custom_chars(&lcd);
+  Lcd_load_custom_chars(&lcd); // 加载恐龙和草地图形
+  game_start = false; // 确保初始状态是待机
 
-  // 初始提示（测试是否能显示自定义字符，例如显示恐龙的头）
-  Lcd_cursor(&lcd, 0, 0);
-  lcd_write_data(&lcd, 0x04); // 尝试显示 CGRAM 地址 0x04 的字符（恐龙站立）
-  Lcd_string(&lcd, " DINO TEST");
+  HAL_TIM_Base_Start_IT(&htim1);
+
+  // 初始显示，设置初始状态
+  Draw_Initial_Screen();
+  last_game_start_state = game_start;
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  Lcd_State_t last_state = lcd_state; // 跟踪上一个状态以检测变化
-  uint8_t dino_frame = 0; // 0 表示帧 1 (0x06)，1 表示帧 2 (0x07)
-  int8_t dino_col = 0;       // 恐龙的当前列位置 (0 到 15)
-  int8_t dino_direction = 1; // 移动方向：1 (向右), -1 (向左)
-
   while (1)
   {
-    // 1. 中断状态处理：仅在状态切换时执行清屏操作
-    if (lcd_state != last_state)
+    // --- 状态变化检测与 LCD 重绘逻辑 ---
+    // 这个逻辑现在主要用于处理从游戏结束返回待机界面的情况 (如果未来有此功能)
+    if (game_start != last_game_start_state)
     {
-      if (lcd_state == STATE_DISPLAY)
+      if (game_start == false)
       {
-        Lcd_clear(&lcd);
-        Lcd_cursor(&lcd, 0, 0);
-        Lcd_string(&lcd, "Button Activated!");
-        // 重新初始化恐龙位置
-        dino_col = 0;
-        dino_direction = 1;
+        // 状态从 TRUE (游戏) 切换到 FALSE (待机/结束)，重绘初始屏幕
+        Draw_Initial_Screen();
       }
-      else // STATE_CLEAR
-      {
-        Lcd_clear(&lcd);
-        Lcd_cursor(&lcd, 0, 0);
-        Lcd_string(&lcd, "Press Button!");
-      }
-
-      last_state = lcd_state;
+      // 当从 FALSE 切换到 TRUE 时，所有绘制工作由 EXTI 中断处理，这里无需操作
+      last_game_start_state = game_start;
     }
 
-    // --- 2. 动画与移动逻辑：仅在 STATE_DISPLAY 状态下运行 ---
-    if (lcd_state == STATE_DISPLAY)
+    // --- LED 指示和主循环延时 ---
+    if (game_start == false)
     {
-      // A. 清除上一帧的恐龙（在当前位置写入空格）
-      Lcd_cursor(&lcd, 1, dino_col); // 定位到上一帧位置
-      lcd_write_data(&lcd, ' ');           // 写入空格清除恐龙
-
-      // B. 更新恐龙位置
-      dino_col += dino_direction;
-
-      // C. 边界碰撞检测 (16x2 LCD，列范围 0 到 15)
-      if (dino_col >= 15)
-      {
-        dino_direction = -1; // 达到最右侧，改为向左移动
-        dino_col = 15;       // 确保停留在边界
-      }
-      else if (dino_col <= 0)
-      {
-        dino_direction = 1;  // 达到最左侧，改为向右移动
-        dino_col = 0;        // 确保停留在边界
-      }
-
-      // D. 绘制新一帧的恐龙
-      Lcd_cursor(&lcd, 1, dino_col); // 定位到新的位置
-
-      // 切换跑步帧：0x06 (跑腿帧 1) 或 0x07 (跑腿帧 2)
-      uint8_t current_dino_char = (dino_frame == 0) ? 0x06 : 0x07;
-      lcd_write_data(&lcd, current_dino_char);
-
-      // 切换到下一帧
-      dino_frame = 1 - dino_frame;
-
-      // E. 闪烁 LED（表示主循环在动）
+      // 待机状态：慢速闪烁
       HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
-
-      // F. 动画延时：控制帧率和移动速度
       HAL_Delay(500);
     }
     else
     {
-      // 如果不是 DISPLAY 状态，只做 LED 闪烁和短延时
+      // 游戏状态：快速闪烁
       HAL_GPIO_TogglePin(GPIOA, LED_LD2_Pin);
       HAL_Delay(100);
     }
 
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -276,9 +245,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 72-1;
+  htim1.Init.Prescaler = 7200-1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 1000-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -366,6 +335,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  //调低优先级以避免与定时器中断冲突
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -395,7 +365,7 @@ void Error_Handler(void)
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
+  * where the assert_param error has occurred.
   * @param  file: pointer to the source file name
   * @param  line: assert_param error line source number
   * @retval None
