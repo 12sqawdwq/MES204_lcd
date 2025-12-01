@@ -10,14 +10,14 @@
 #define COL 16
 
 // CGRAM 字符地址定义 (与 lcd.c 中 custom_chars 数组的顺序对应)
-#define CHAR_EMPTY        0x00
+#define CHAR_GRASS_F0     0x00
 #define CHAR_GRASS_F1     0x01
 #define CHAR_GRASS_F2     0x02
 #define CHAR_GRASS_F3     0x03
-#define CHAR_DINO_STAND   0x04
-#define CHAR_DINO_JUMP    0x05
-#define CHAR_DINO_RUN1    0x06
-#define CHAR_DINO_RUN2    0x07
+#define CHAR_DINO_A       0x04
+#define CHAR_DINO_B       0x05
+#define CHAR_DINO_JUMP_TOP       0x06
+#define CHAR_DINO_JUMP_BOTTOM    0x07
 
 
 // ======================================
