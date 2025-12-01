@@ -2,6 +2,8 @@
 
 > A faithful implementation of the classic Chrome Dino game on the STM32F446xx microcontroller, featuring a custom LCD1602 rendering engine and interrupt-driven architecture.
 
+![Demo](demo.gif)
+
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-STM32-green.svg)
 ![Language](https://img.shields.io/badge/language-C-orange.svg)
@@ -20,6 +22,36 @@ Unlike simple loops often found in beginner projects, this implementation transf
 * **Display:** LCD1602 (16x2 Character LCD)
 * **Input:** Push Button (Connected to PC13)
 * **Debugger:** ST-Link V2/V3
+
+---
+
+## 🔩 Hardware Platform: STM32F446xx
+
+The choice of the STM32F446xx is central to this project, offering a powerful core and rich peripheral set ideal for real-time applications.
+
+### Key Features
+- **Core:** ARM Cortex-M4 running at up to 180 MHz.
+- **Memory:** 512 KB Flash, 128 KB SRAM.
+- **Peripherals:** Multiple timers, ADCs, DACs, and communication interfaces.
+
+### Chip Architecture & Pinout
+
+Below are diagrams detailing the architecture and pin definitions of the STM32F446xx, which are crucial for understanding the hardware connections and capabilities.
+
+**STM32F4 MCU Package Structure:**
+![STM32F4 MCU Package Structure](STM32F4MCUPackageStructure.png)
+
+**Pin Definitions for the Chip:**
+![Pin Definitions for the Chip](PinDefinitionsfortheChip.png)
+
+**Chip Data Link Architecture:**
+![Chip Data Link Architecture](ChipDataLinkArchitecture.png)
+
+**Firmware Components:**
+![Firmware Components](FrimwareComponents.png)
+
+**STM32CubeF4 Architecture Overview:**
+![STM32CubeF4 Architecture Overview](STM32CubeF4ArchitectureOverview.png)
 
 ---
 
@@ -102,6 +134,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 ## 🎨 Graphics Implementation via CGRAM
 
 The visual fidelity is achieved by exploiting the eight available Custom Graphics Character slots (CGRAM) in the HD44780 controller. The `Lcd_load_custom_chars()` function populates these slots during initialization.
+
+![Custom Characters](custom_characters.png)
 
 ### Custom Character Mapping
 
