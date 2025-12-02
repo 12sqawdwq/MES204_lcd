@@ -143,7 +143,8 @@ The visual fidelity is achieved by exploiting the eight available Custom Graphic
 | :------------ | :--------------------- | :------------------------------------- | :--------- |
 | 0x00 - 0x03   | `CHAR_GRASS_F0` - `F3` | Obstacle animation frames (encoded arrays) | `lcd.c`    |
 | 0x04 - 0x07   | `CHAR_DINO_A` - `JUMP` | Dino run cycle and jump sequence       | `lcd.c`    |
-🚀 Execution Protocol
+
+## 🚀 Execution Protocol
 
 ### 1. Compilation
 - **Toolchain:** Ensure ARM-None-EABI GCC and STM32 HAL libraries are configured.
